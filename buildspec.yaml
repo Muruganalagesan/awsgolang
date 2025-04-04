@@ -1,0 +1,29 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      golang: 1.20
+    commands:
+      - echo "Installing dependencies..."
+      - go mod tidy
+
+  build:
+    commands:
+      - echo "Building Go application..."
+      - GOOS=linux GOARCH=amd64 go build -o main .
+
+  post_build:
+    commands:
+      - echo "Build completed successfully!"
+      - echo "Logging into Amazon ECR..."
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.us-east-1.amazonaws.com
+      - echo "Building Docker image..."
+      - docker build -t go-hello-world .
+      - docker tag go-hello-world:latest <aws_account_id>.dkr.ecr.us-east-1.amazonaws.com/go-hello-world:latest
+      - echo "Pushing image to Amazon ECR..."
+      - docker push <aws_account_id>.dkr.ecr.us-east-1.amazonaws.com/go-hello-world:latest
+
+artifacts:
+  files:
+    - main
